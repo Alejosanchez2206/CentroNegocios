@@ -26,7 +26,7 @@ module.exports = {
         try {
             const { options } = interation;
             const mensaje = options.getString('mensaje');
-            await interation.reply({ content: 'Enviando mensaje...' } , { ephemeral: true });
+            await interation.reply({ content: 'Mensaje enviado' ,  ephemeral: true });
             return interation.guild.channels.cache.get(interation.channelId).send(mensaje);
 
         } catch (err) {
