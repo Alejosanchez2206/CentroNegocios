@@ -35,6 +35,40 @@ module.exports = {
             return interation.reply({ content: 'No hay negocios asociados a tu usuario', ephemeral: true })
         }
 
+        if (validarRol.length === 1) {
+            const rol = validarRol[0].guildRol;
+
+            const empleados = await contratarSchema.find({ guildNegocio: interation.guild.id, guildRolEmpleo: rol, guildJefe: { $in: rolesArray } })
+
+            if (empleados.length === 0) {
+                return interation.reply({ content: 'No hay empleados', ephemeral: true })
+            }
+
+            const NegocioSchema = await negociosSchema.findOne({
+                guildNegocio: interation.guild.id,
+                guildRol: rol,
+                guildJefe: { $in: rolesArray }
+            });
+
+            if (!NegocioSchema) {
+                return interation.reply({ content: 'No perteneces a este negocio', ephemeral: true })
+            }
+
+            const empleadoList = empleados.map(emp => {
+                const fechaContratacion = new Date(emp.fechaContratar);
+                const diferencia = new Date(new Date() - fechaContratacion);
+                const months = diferencia.getUTCMonth();
+                const days = diferencia.getUTCDate() - 1;
+                return `${emp.NombreEmpleado} - ${months} meses y ${days} días`;
+            }).join('\n');
+
+            const embebEmpleados = new EmbedBuilder()
+                .setColor("#00FF2E")
+                .setTitle(`Empleados de ${NegocioSchema.nombreNegocio}`)
+                .setDescription(`**${NegocioSchema.nombreNegocio}** tiene ${empleados.length} empleados\n\n${empleadoList}`);
+
+            return interation.reply({ embeds: [embebEmpleados], ephemeral: true })
+        }
         const selecMenu = new StringSelectMenuBuilder()
             .setCustomId('selecMenunegocios')
             .setPlaceholder('Elige un negocio')

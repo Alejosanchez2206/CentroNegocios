@@ -44,6 +44,70 @@ module.exports = {
                 return interation.reply({ content: 'No hay negocios asociados a tu usuario', ephemeral: true })
             }
 
+            if (validarRol.length === 1) {
+                const rol = validarRol[0].guildRol;
+                const guildNegocio = validarRol[0].guildNegocio
+
+                const facturas = await facturarSchema.aggregate([
+
+                    {
+                        $match: {   // Filtra por el rol seleccionado
+                            guildRolEmpleo: rol,
+                            fechaFacturacion: {
+                                $gte: new Date(Date.now() - (dias * 24 * 60 * 60 * 1000)),
+                                $lte: new Date(Date.now())
+                            } // Filtra por los ultimos 30 dias
+                        }
+                    },
+                    {
+                        $group: {
+                            _id: {
+                                IdEmpleado: "$IdEmpleado",
+                                NombreEmpleado: "$NombreEmpleado"
+                            },
+                            totalFacturado: { $sum: '$valorFactura' }, // Suma el valor de las facturas por empleado     
+                        }
+                    },
+                    {
+                        $project: {
+                            _id: 0,
+                            IdEmpleado: "$_id.IdEmpleado",
+                            NombreEmpleado: "$_id.NombreEmpleado",
+                            TotalFact: "$totalFacturado"
+                        }
+                    },
+                    { $sort: { TotalFact: -1 } }
+
+                ])
+
+                const negocio = await negociosSchema.findOne({ guildNegocio: guildNegocio, guildRol: rol })
+                const formatoMiles = (number) => {
+                    const exp = /(\d)(?=(\d{3})+(?!\d))/g;
+                    const rep = '$1,';
+                    let arr = number.toString().split('.');
+                    arr[0] = arr[0].replace(exp, rep);
+                    return arr[1] ? arr.join('.') : arr[0];
+                }
+
+                if (facturas.length === 0) {
+                    return interation.reply({ content: `No hay facturas para este negocio`, ephemeral: true }) // Actualiza el embed con el nuevo valor       
+
+                } else {
+                    const facturacionTotal = facturas.reduce((total, fact) => total + fact.TotalFact, 0)
+                    const embed = new EmbedBuilder()
+                        .setColor('#00FF2E')
+                        .setTitle(`Facturas de ${negocio.nombreNegocio}`)
+                    for (let i = 0; i < facturas.length; i++) {
+                        const fact = facturas[i]
+                        embed.addFields({ name: `**Top ${i + 1}**`, value: `Nombre: ${fact.NombreEmpleado}\nFacturado: $ ${formatoMiles(fact.TotalFact)}` })
+                    }
+                    embed.addFields({ name: `**Total facturado**`, value: ` $ ${formatoMiles(facturacionTotal)}` })
+                    await interation.reply({ content: `Detalle de la Facturas`, ephemeral: true })
+                    return interation.channel.send({ content: `**Detalles de las facturas de ${negocio.nombreNegocio} , de los ultimos ${dias} dias**`, embeds: [embed] }) // Actualiza el embed con el nuevo valor
+
+                }
+            }
+
             const selecMenu = new StringSelectMenuBuilder()
                 .setCustomId('selecMenunegocios')
                 .setPlaceholder('Elige un negocio')

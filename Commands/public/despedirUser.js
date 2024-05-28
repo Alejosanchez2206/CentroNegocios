@@ -42,6 +42,46 @@ module.exports = {
                 return interation.reply({ content: 'No hay negocios asociados a tu usuario', ephemeral: true })
             }
 
+            if (validarRol.length === 1) {
+                const rol = validarRol[0].guildRol;
+                const guildNegocio = validarRol[0].guildNegocio
+
+                const validarContratar = await contratarSchema.findOne({ guildNegocio: guildNegocio, guildRolEmpleo: rol, guildJefe: { $in: rolesArray }, IdEmpleado: user.id })
+
+                const NegocioSchema = await negociosSchema.findOne({
+                    guildNegocio: guildNegocio,
+                    guildRol: rol,
+                    guildJefe: { $in: rolesArray }
+                });
+
+                if (!NegocioSchema) {
+                    return interation.reply({ content: 'No perteneces a este negocio', ephemeral: true })
+                }
+
+                if (!validarContratar) {
+                    return interation.reply({ content: 'No has contratado a este usuario', ephemeral: true })  //No hay empleos
+                }
+
+                if (validarContratar) {
+                    const despedir = new despedirSchema({
+                        guildNegocio: interation.guild.id,
+                        NombreEmpleado: user.username,
+                        NombreQuienDespide: interation.user.username,
+                        IdQuienDespide: interation.user.id,
+                        fechaDespedir: new Date(),
+                        ArrayContratado: validarContratar
+                    })
+                    await despedir.save()
+
+                    await contratarSchema.findOneAndDelete({ guildNegocio: interation.guild.id, guildRolEmpleo: rol, guildJefe: { $in: rolesArray }, IdEmpleado: user.id })
+
+                    await interation.guild.members.cache.get(user.id).roles.remove(rol)
+                    await interation.guild.members.cache.get(user.id).user.send({ content: `Lo sentimos, has sido despedido, ${NegocioSchema.nombreNegocio} Colaborador de COMPLEX RP, Cualquier duda, por favor comunicarse con su jefe inmediato` })
+                    return interation.reply({ content: `Has despedido a ${user.username} de ${NegocioSchema.nombreNegocio}`, ephemeral: true })
+                }
+
+            }
+
             const selecMenu = new StringSelectMenuBuilder()
                 .setCustomId('selecMenunegocios')
                 .setPlaceholder('Elige un negocio')

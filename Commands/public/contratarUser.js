@@ -48,6 +48,58 @@ module.exports = {
                 return interation.reply({ content: 'No hay negocios asociados a tu usuario', ephemeral: true })
             }
 
+            if (validarRol.length === 1) {
+                const rol = validarRol[0].guildRol;
+                const guildNegocio = validarRol[0].guildNegocio
+
+                const validarContratar = await contratarSchema.findOne({
+                    guildNegocio: guildNegocio,
+                    guildRolEmpleo: rol,
+                    guildJefe: { $in: rolesArray },
+                    IdEmpleado: user.id
+                });
+
+                if (validarContratar) {
+                    return interation.reply({ content: 'Este usuario ya se encuentra contratado', ephemeral: true })
+                }
+
+                const NegocioSchema = await negociosSchema.findOne({
+                    guildNegocio: guildNegocio,
+                    guildRol: rol,
+                    guildJefe: { $in: rolesArray }
+                });
+
+
+                if (!NegocioSchema) {
+                    return interation.reply({ content: 'No perteneces a este negocio', ephemeral: true })
+                }
+
+
+                const contratar = new contratarSchema({
+                    guildNegocio: interation.guild.id,
+                    guildRolEmpleo: rol,
+                    NombreEmpleado: user.username,
+                    IdEmpleado: user.id,
+                    NombreQuienContrata: interation.user.username,
+                    IdQuienContrata: interation.user.id,
+                    NombreDelNegocio: NegocioSchema.nombreNegocio,
+                    guildJefe: NegocioSchema.guildJefe,
+                    fechaContratar: new Date()
+                });
+
+                await contratar.save();
+                await interation.guild.members.cache.get(user.id).roles.add(rol);
+                await interation.guild.members.cache.get(user.id).user.send({
+                    content: `Has sido contratado en ${NegocioSchema.nombreNegocio} compañia de COMPLEX RP, recuerda leer las normativas y estar atento a los comunicados.`
+                });
+                return interation.reply({
+                    content: `Has contratado a ${user.username} en ${NegocioSchema.nombreNegocio} exitosamente.`,
+                    ephemeral: true
+                })
+            }
+
+
+
             const selecMenu = new StringSelectMenuBuilder()
                 .setCustomId('selecMenunegocios')
                 .setPlaceholder('Elige un negocio')
