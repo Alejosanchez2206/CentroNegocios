@@ -27,6 +27,10 @@ module.exports = {
                 .setDescription('Razon de la factura')
                 .setRequired(true)
                 .setMinLength(3)
+        ).addAttachmentOption(option =>
+            option.setName('fotos')
+                .setDescription('Captura de pantalla de la transacción')
+                .setRequired(true)
         ),
 
     /**
@@ -38,7 +42,8 @@ module.exports = {
         const { options } = interation;
         const valor = options.getNumber('valor-factura');
         const razon = options.getString('razon-factura');
-
+        const fotos = options.getAttachment('fotos');
+     
         const rolesUser = interation.member.roles.cache.map(role => role.id).join(',')
 
         const rolesArray = rolesUser.split(',')
@@ -88,6 +93,7 @@ module.exports = {
                     .addFields({ name: 'Valor', value: `$${formatoMiles(valor)}` })
                     .addFields({ name: 'Razon', value: razon })
                     .addFields({ name: 'Facturado por', value: interation.user.username })
+                    .setImage(fotos.url)
                     .setTimestamp()
 
                 await interation.reply({ content: 'Factura realizada correctamente', ephemeral: true })
@@ -157,6 +163,7 @@ module.exports = {
                         .addFields({ name: 'Valor', value: `$${formatoMiles(valor)}` })
                         .addFields({ name: 'Razon', value: razon })
                         .addFields({ name: 'Facturado por', value: interation.user.username })
+                        .setImage(fotos.url)
                         .setTimestamp()
 
                     await interation.update({ content: 'Factura realizada correctamente', components: [] })
