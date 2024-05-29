@@ -43,7 +43,7 @@ module.exports = {
         const valor = options.getNumber('valor-factura');
         const razon = options.getString('razon-factura');
         const fotos = options.getAttachment('fotos');
-     
+
         const rolesUser = interation.member.roles.cache.map(role => role.id).join(',')
 
         const rolesArray = rolesUser.split(',')
@@ -60,11 +60,13 @@ module.exports = {
 
             const NegocioSchema = await negociosSchema.findOne({ guildNegocio: guildNegocio, guildRol: rol })
 
-            if (!NegocioSchema) {
+            const validarContratar = await contratarSchema.findOne({ guildNegocio: guildNegocio, guildRolEmpleo: rol, IdEmpleado: interation.user.id })
+
+            if (!validarContratar) {
                 return interation.reply({ content: 'No perteneces a este negocio', ephemeral: true })
             }
 
-            if (NegocioSchema) {
+            if (validarContratar) {
                 const facturar = new facturarSchema({
                     guildNegocio: NegocioSchema.guildNegocio,
                     guildRolEmpleo: NegocioSchema.guildRol,
@@ -130,11 +132,13 @@ module.exports = {
 
                 const NegocioSchema = await negociosSchema.findOne({ guildNegocio: interation.guild.id, guildRol: rol })
 
-                if (!NegocioSchema) {
-                    return interation.update({ content: 'No perteneces a este negocio', components: [] })
+                const validarContratar = await contratarSchema.findOne({ guildNegocio:  interation.guild.id , guildRolEmpleo: rol, IdEmpleado: interation.user.id })
+
+                if (!validarContratar) {
+                    return interation.reply({ content: 'No perteneces a este negocio', ephemeral: true })
                 }
 
-                if (NegocioSchema) {
+                if (validarContratar) {
                     const facturar = new facturarSchema({
                         guildNegocio: NegocioSchema.guildNegocio,
                         guildRolEmpleo: NegocioSchema.guildRol,
