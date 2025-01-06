@@ -42,8 +42,6 @@ module.exports = {
             } catch (error) {
                 console.log(error);
             }
-        } else {
-            return interaction.reply({ content: 'Error al enviar la sugerencia 😒', ephemeral: true })
         }
     }
 }
